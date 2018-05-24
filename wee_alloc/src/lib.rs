@@ -237,6 +237,8 @@ extern crate alloc;
 extern crate core;
 #[cfg(feature = "static_array_backend")]
 extern crate spin;
+#[cfg(feature = "ptr_array_backend")]
+extern crate spin;
 
 extern crate memory_units;
 extern crate unreachable;
@@ -248,6 +250,9 @@ cfg_if! {
     if #[cfg(feature = "static_array_backend")] {
         mod imp_static_array;
         use imp_static_array as imp;
+    } else if #[cfg(feature = "ptr_array_backend")] {
+        mod imp_ptr_array;
+        use imp_ptr_array as imp;
     } else if #[cfg(target_arch = "wasm32")] {
         mod imp_wasm32;
         use imp_wasm32 as imp;
@@ -1023,6 +1028,13 @@ impl<'a> WeeAlloc<'a> {
     /// This is usable for initializing `static`s that get set as the global
     /// allocator.
     pub const INIT: Self = <Self as ConstInit>::INIT;
+
+
+    /// runtime init
+    #[cfg(feature = "ptr_array_backend")]
+    pub unsafe fn init(&self, heap_start :usize, heap_size :usize) {
+        self.head.init(heap_start, heap_size)
+    }
 
     #[cfg(feature = "size_classes")]
     unsafe fn with_free_list_and_policy_for_size<F, T>(&self, size: Words, align: Bytes, f: F) -> T
